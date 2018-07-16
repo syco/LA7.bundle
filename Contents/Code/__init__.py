@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 def Start():
   ObjectContainer.title1 = 'LA7'
   HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.87 Mobile Safari/537.36'
@@ -9,12 +11,61 @@ def MainMenu():
   src = html.xpath('//script[contains(.,"var vS")]/text()')[0].strip()
   src = src.replace("var vS = '", "", 1)
   src = src.replace("';", "", 1)
-  Log(' --> Final stream la7: %s' % (src))
   oc.add(Show(
     src = src,
     title = "Live"
   ))
+  for x in range(7):
+    ddd = date.today() - timedelta($x)
+    oc.add(
+      DirectoryObject(
+        key = Callback(ReplayList, title = ddd.strftime('%A %d %B %Y'), inc = x),
+        title = ddd.strftime('%A %d %B %Y')
+      )
+    )
   return oc
+
+
+@route('/video/la7/replaylist')
+def ReplayList(title, inc):
+  oc = ObjectContainer(title2 = title)
+  oc.add(
+    DirectoryObject(
+      key = Callback(ReplayList, title = title, inc = inc),
+      title = 'Refresh'
+    )
+  )
+  html = HTML.ElementFromURL('http://www.la7.it/rivedila7/%i/LA7' % (inc))
+  for item in html.xpath('//div[@class="palinsesto_row             disponibile clearfix"]'):
+    time = (item.xpath('.//div[@class="orario"]/text()')[0]).decode('utf-8')
+    title = (item.xpath('.//div[@class="titolo clearfix"]/text()')[0]).decode('utf-8')
+    url = item.xpath('.//div[@class="titolo clearfix"]/a')[0];
+    href = url.get('href');
+    oc.add(
+      DirectoryObject(
+        key = Callback(ReplayShow, title = title, url = href),
+        title = title
+      )
+    )
+
+@route('/video/la7/replayshow')
+def ReplayShow(title, url):
+  oc = ObjectContainer(title2 = title)
+  oc.add(
+    DirectoryObject(
+      key = Callback(ReplayShow, title = title, url = url),
+      title = 'Refresh'
+    )
+  )
+  html = HTTP.Request(url).content
+  pattern = re.compile(r'"(http:[^"]*\.(m3u8|mp4|f4m))"', re.IGNORECASE)
+  for m in re.finditer(pattern, html):
+    oc.add(
+      Show(
+        src = m.group(1),
+        title = m.group(2)
+      )
+    )
 
 
 @route('/video/la7/show', include_container = bool)
