@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import re
 
 def Start():
   ObjectContainer.title1 = 'LA7'
@@ -16,7 +17,7 @@ def MainMenu():
     title = "Live"
   ))
   for x in range(7):
-    ddd = date.today() - timedelta($x)
+    ddd = date.today() - timedelta(x)
     oc.add(
       DirectoryObject(
         key = Callback(ReplayList, title = ddd.strftime('%A %d %B %Y'), inc = x),
@@ -35,18 +36,30 @@ def ReplayList(title, inc):
       title = 'Refresh'
     )
   )
-  html = HTML.ElementFromURL('http://www.la7.it/rivedila7/%i/LA7' % (inc))
+  html = HTML.ElementFromURL('http://www.la7.it/rivedila7/{}/LA7'.format(inc))
   for item in html.xpath('//div[@class="palinsesto_row             disponibile clearfix"]'):
     time = (item.xpath('.//div[@class="orario"]/text()')[0]).decode('utf-8')
-    title = (item.xpath('.//div[@class="titolo clearfix"]/text()')[0]).decode('utf-8')
+    title = (item.xpath('.//div[@class="titolo clearfix"]/a/text()')[0]).decode('utf-8')
     url = item.xpath('.//div[@class="titolo clearfix"]/a')[0];
     href = url.get('href');
-    oc.add(
-      DirectoryObject(
-        key = Callback(ReplayShow, title = title, url = href),
-        title = title
+    if href.startswith('http'):
+      Log(href)
+      oc.add(
+        DirectoryObject(
+          key = Callback(ReplayShow, title = '[{}] {}'.format(time, title), url = href),
+          title = '[{}] {}'.format(time, title)
+        )
       )
-    )
+    else:
+      href = 'http://www.la7.it{}'.format(href)
+      Log(href)
+      oc.add(
+        DirectoryObject(
+          key = Callback(ReplayShow, title = '[{}] {}'.format(time, title), url = href),
+          title = '[{}] {}'.format(time, title)
+        )
+      )
+  return oc
 
 @route('/video/la7/replayshow')
 def ReplayShow(title, url):
@@ -66,6 +79,7 @@ def ReplayShow(title, url):
         title = m.group(2)
       )
     )
+  return oc
 
 
 @route('/video/la7/show', include_container = bool)
