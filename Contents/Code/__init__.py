@@ -18,24 +18,20 @@ def MainMenu():
   ))
   for x in range(7):
     ddd = date.today() - timedelta(x)
-    oc.add(
-      DirectoryObject(
-        key = Callback(ReplayList, title = ddd.strftime('%A %d %B %Y'), inc = x),
-        title = ddd.strftime('%A %d %B %Y')
-      )
-    )
+    oc.add(DirectoryObject(
+      key = Callback(ReplayList, title = ddd.strftime('%A %d %B %Y'), inc = x),
+      title = ddd.strftime('%A %d %B %Y')
+    ))
   return oc
 
 
 @route('/video/la7/replaylist')
 def ReplayList(title, inc):
   oc = ObjectContainer(title2 = title)
-  oc.add(
-    DirectoryObject(
-      key = Callback(ReplayList, title = title, inc = inc),
-      title = 'Refresh'
-    )
-  )
+  oc.add(DirectoryObject(
+    key = Callback(ReplayList, title = title, inc = inc),
+    title = 'Refresh'
+  ))
   html = HTML.ElementFromURL('http://www.la7.it/rivedila7/{}/LA7'.format(inc))
   for item in html.xpath('//div[@class="palinsesto_row             disponibile clearfix"]'):
     time = (item.xpath('.//div[@class="orario"]/text()')[0]).decode('utf-8')
@@ -44,41 +40,34 @@ def ReplayList(title, inc):
     href = url.get('href');
     if href.startswith('http'):
       Log(href)
-      oc.add(
-        DirectoryObject(
-          key = Callback(ReplayShow, title = '[{}] {}'.format(time, title), url = href),
-          title = '[{}] {}'.format(time, title)
-        )
-      )
+      oc.add(DirectoryObject(
+        key = Callback(ReplayShow, title = '[{}] {}'.format(time, title), url = href),
+        title = '[{}] {}'.format(time, title)
+      ))
     else:
       href = 'http://www.la7.it{}'.format(href)
       Log(href)
-      oc.add(
-        DirectoryObject(
-          key = Callback(ReplayShow, title = '[{}] {}'.format(time, title), url = href),
-          title = '[{}] {}'.format(time, title)
-        )
-      )
+      oc.add(DirectoryObject(
+        key = Callback(ReplayShow, title = '[{}] {}'.format(time, title), url = href),
+        title = '[{}] {}'.format(time, title)
+      ))
   return oc
 
 @route('/video/la7/replayshow')
 def ReplayShow(title, url):
   oc = ObjectContainer(title2 = title)
-  oc.add(
-    DirectoryObject(
-      key = Callback(ReplayShow, title = title, url = url),
-      title = 'Refresh'
-    )
-  )
+  oc.add(DirectoryObject(
+    key = Callback(ReplayShow, title = title, url = url),
+    title = 'Refresh'
+  ))
   html = HTTP.Request(url).content
   pattern = re.compile(r'"(http:[^"]*\.(m3u8|mp4|f4m))"', re.IGNORECASE)
   for m in re.finditer(pattern, html):
-    oc.add(
-      Show(
-        src = m.group(1),
-        title = m.group(2)
-      )
-    )
+    Log('Add {}, {}'.format(m.group(1), m.group(2)))
+    oc.add(Show(
+      src = m.group(1),
+      title = m.group(2)
+    ))
   return oc
 
 
