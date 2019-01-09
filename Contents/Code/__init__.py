@@ -38,19 +38,14 @@ def ReplayList(title, inc):
     title = (item.xpath('.//div[@class="titolo clearfix"]/a/text()')[0]).decode('utf-8')
     url = item.xpath('.//div[@class="titolo clearfix"]/a')[0];
     href = url.get('href');
-    if href.startswith('http'):
-      Log(href)
-      oc.add(DirectoryObject(
-        key = Callback(ReplayShow, title = '[{}] {}'.format(time, title), url = href),
-        title = '[{}] {}'.format(time, title)
-      ))
-    else:
+    if not href.startswith('http'):
       href = 'http://www.la7.it{}'.format(href)
-      Log(href)
-      oc.add(DirectoryObject(
-        key = Callback(ReplayShow, title = '[{}] {}'.format(time, title), url = href),
-        title = '[{}] {}'.format(time, title)
-      ))
+    Log(href)
+    title2 = '[{}] {}'.format(time, title).decode('utf-8')
+    oc.add(DirectoryObject(
+      key = Callback(ReplayShow, title = title2, url = href),
+      title = title2
+    ))
   return oc
 
 @route('/video/la7/replayshow')
@@ -65,8 +60,8 @@ def ReplayShow(title, url):
   for m in re.finditer(pattern, html):
     Log('Add {}, {}'.format(m.group(1), m.group(2)))
     oc.add(Show(
-      src = m.group(1),
-      title = m.group(2)
+      src = m.group(1).decode('utf-8'),
+      title = m.group(2).decode('utf-8')
     ))
   return oc
 
@@ -84,7 +79,7 @@ def Show(src, title, include_container = False, **kwargs):
         video_codec = VideoCodec.H264,
         audio_codec = AudioCodec.AAC,
         audio_channels = 2,
-        optimized_for_streaming = True,
+        optimized_for_streaming = False,
         parts = [
           PartObject(
             key = HTTPLiveStreamURL(Callback(Play, src = src))
