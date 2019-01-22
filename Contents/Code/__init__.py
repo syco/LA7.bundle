@@ -49,20 +49,13 @@ def ReplayList(title, inc):
 @route('/video/la7/show', include_container = bool)
 def Show(url, title, include_container = False, **kwargs):
   vco = VideoClipObject(
-    key = Callback(Show, url = url, title = title, include_container = True),
-    rating_key = url,
+    url = url,
     title = title,
     items = [
       MediaObject(
-        protocol = Protocol.HLS,
-        container = Container.MP4,
-        video_codec = VideoCodec.H264,
-        audio_codec = AudioCodec.AAC,
-        audio_channels = 2,
-        optimized_for_streaming = True,
         parts = [
           PartObject(
-            key = HTTPLiveStreamURL(url = Callback(Play, url = url))
+            key = HTTPLiveStreamURL(Callback(Play, url = url))
           )
         ],
       )
