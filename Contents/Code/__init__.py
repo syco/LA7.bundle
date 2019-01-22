@@ -69,4 +69,5 @@ def Show(url, title, include_container = False, **kwargs):
 @indirect
 @route('/video/la7/play.m3u8')
 def Play(url, **kwargs):
+  Log(' --> Final stream url: %s' % (url))
   return IndirectResponse(VideoClipObject, key = url)
