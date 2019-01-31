@@ -13,7 +13,7 @@ def MainMenu():
   src = src.replace("var vS = '", "", 1)
   src = src.replace("';", "", 1)
   oc.add(Show(
-    src = src,
+    url = src,
     title = "Live"
   ))
   for x in range(7):
@@ -27,62 +27,35 @@ def MainMenu():
 
 @route('/video/la7/replaylist')
 def ReplayList(title, inc):
+  pattern = re.compile(r'"(http:[^"]*\.m3u8)"', re.IGNORECASE)
   oc = ObjectContainer(title2 = title)
-  oc.add(DirectoryObject(
-    key = Callback(ReplayList, title = title, inc = inc),
-    title = 'Refresh'
-  ))
   html = HTML.ElementFromURL('http://www.la7.it/rivedila7/{}/LA7'.format(inc))
   for item in html.xpath('//div[@class="palinsesto_row             disponibile clearfix"]'):
-    time = (item.xpath('.//div[@class="orario"]/text()')[0]).decode('utf-8')
-    title = (item.xpath('.//div[@class="titolo clearfix"]/a/text()')[0]).decode('utf-8')
+    title = '[{}] {}'.format(item.xpath('.//div[@class="orario"]/text()')[0], item.xpath('.//div[@class="titolo clearfix"]/a/text()')[0]).decode('utf-8')
     url = item.xpath('.//div[@class="titolo clearfix"]/a')[0];
     href = url.get('href');
     if not href.startswith('http'):
       href = 'http://www.la7.it{}'.format(href)
     Log(href)
-    title2 = '[{}] {}'.format(time, title).decode('utf-8')
-    oc.add(DirectoryObject(
-      key = Callback(ReplayShow, title = title2, url = href),
-      title = title2
-    ))
-  return oc
-
-@route('/video/la7/replayshow')
-def ReplayShow(title, url):
-  oc = ObjectContainer(title2 = title)
-  oc.add(DirectoryObject(
-    key = Callback(ReplayShow, title = title, url = url),
-    title = 'Refresh'
-  ))
-  html = HTTP.Request(url).content
-  pattern = re.compile(r'"(http:[^"]*\.(m3u8|mp4|f4m))"', re.IGNORECASE)
-  for m in re.finditer(pattern, html):
-    Log('Add {}, {}'.format(m.group(1), m.group(2)))
-    oc.add(Show(
-      src = m.group(1).decode('utf-8'),
-      title = m.group(2).decode('utf-8')
-    ))
+    for m in re.finditer(pattern, HTTP.Request(href).content):
+      Log('Add {}, {}'.format(title, m.group(1)))
+      oc.add(Show(
+        url = m.group(1).decode('utf-8'),
+        title = title
+      ))
   return oc
 
 
 @route('/video/la7/show', include_container = bool)
-def Show(src, title, include_container = False, **kwargs):
+def Show(url, title, include_container = False, **kwargs):
   vco = VideoClipObject(
-    key = Callback(Show, src = src, title = title, include_container = True),
-    rating_key = src,
+    url = url,
     title = title,
     items = [
       MediaObject(
-        protocol = Protocol.HLS,
-        container = Container.MP4,
-        video_codec = VideoCodec.H264,
-        audio_codec = AudioCodec.AAC,
-        audio_channels = 2,
-        optimized_for_streaming = False,
         parts = [
           PartObject(
-            key = HTTPLiveStreamURL(Callback(Play, src = src))
+            key = HTTPLiveStreamURL(Callback(Play, url = url))
           )
         ],
       )
@@ -95,5 +68,6 @@ def Show(src, title, include_container = False, **kwargs):
 
 @indirect
 @route('/video/la7/play.m3u8')
-def Play(src, **kwargs):
-  return IndirectResponse(VideoClipObject, key = src)
+def Play(url, **kwargs):
+  Log(' --> Final stream url: %s' % (url))
+  return IndirectResponse(VideoClipObject, key = url)
