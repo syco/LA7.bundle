@@ -12,6 +12,8 @@ def MainMenu():
   src = html.xpath('//script[contains(.,"var vS")]/text()')[0].strip()
   src = src.replace("var vS = '", "", 1)
   src = src.replace("';", "", 1)
+  if src.startswith('//'):
+    src = 'https:{0}'.format(src)
   oc.add(Show(
     url = src,
     title = "Live"
