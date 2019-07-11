@@ -8,7 +8,7 @@ def Start():
 @handler('/video/la7', 'LA7', thumb = 'La7.jpg', art = 'La7.jpg')
 def MainMenu():
   oc = ObjectContainer()
-  html = HTML.ElementFromURL('http://www.la7.it/dirette-tv')
+  html = HTML.ElementFromURL('https://www.la7.it/dirette-tv')
   src = html.xpath('//script[contains(.,"var vS")]/text()')[0].strip()
   src = src.replace("var vS = '", "", 1)
   src = src.replace("';", "", 1)
@@ -29,15 +29,15 @@ def MainMenu():
 
 @route('/video/la7/replaylist')
 def ReplayList(title, inc):
-  pattern = re.compile(r'"(http:[^"]*\.m3u8)"', re.IGNORECASE)
+  pattern = re.compile(r'"(https:[^"]*\.m3u8)"', re.IGNORECASE)
   oc = ObjectContainer(title2 = title)
-  html = HTML.ElementFromURL('http://www.la7.it/rivedila7/{}/LA7'.format(inc))
+  html = HTML.ElementFromURL('https://www.la7.it/rivedila7/{}/LA7'.format(inc))
   for item in html.xpath('//div[@class="palinsesto_row             disponibile clearfix"]'):
     title = '[{}] {}'.format(item.xpath('.//div[@class="orario"]/text()')[0], item.xpath('.//div[@class="titolo clearfix"]/a/text()')[0]).decode('utf-8')
     url = item.xpath('.//div[@class="titolo clearfix"]/a')[0];
     href = url.get('href');
     if not href.startswith('http'):
-      href = 'http://www.la7.it{}'.format(href)
+      href = 'https://www.la7.it{}'.format(href)
     Log(href)
     for m in re.finditer(pattern, HTTP.Request(href).content):
       Log('Add {}, {}'.format(title, m.group(1)))
